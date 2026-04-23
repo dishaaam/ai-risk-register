@@ -5,20 +5,9 @@ import TableSkeleton from "../components/TableSkeleton";
 import StatusBadge from "../components/StatusBadge";
 import PriorityBadge from "../components/PriorityBadge";
 
-const RiskListPage = () => {
-  const [risks, setRisks] = useState([]);
-  const [loading, setLoading] = useState(true);
+const RiskListPage = ({ risks = [] }) => {
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setRisks(mockRisks);
-      setLoading(false);
-    }, 1200);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <div className="p-6">
       {/* Header */}
