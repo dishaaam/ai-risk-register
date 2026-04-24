@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { mockRisks } from "../services/mockData";
+import { getRiskById, createRisk, updateRisk } from "../services/riskService";
 import validateRisk from "../services/validateRisk";
 import FormInput from "../components/FormInput";
 import FormSelect from "../components/FormSelect";
@@ -19,7 +19,7 @@ const emptyForm = {
   description: "",
 };
 
-const RiskFormPage = ({ risks = [], onSubmit }) => {
+const RiskFormPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = Boolean(id);
@@ -32,19 +32,19 @@ const RiskFormPage = ({ risks = [], onSubmit }) => {
   // If editing, load existing data
   useEffect(() => {
     if (isEditing) {
-      // Later replace with: api.get(`/api/risks/${id}`)
-      const existing = mockRisks.find((r) => r.id === parseInt(id));
-      if (existing) {
-        setFormData({
-          title: existing.title,
-          category: existing.category,
-          status: existing.status,
-          priority: existing.priority,
-          owner: existing.owner,
-          score: existing.score,
-          description: existing.description || "Sample description for editing.",
-        });
-      }
+      getRiskById(id).then((data) => {
+        if (data) {
+          setFormData({
+            title: data.title,
+            category: data.category,
+            status: data.status,
+            priority: data.priority,
+            owner: data.owner,
+            score: data.score,
+            description: data.description || "",
+          });
+        }
+      });
     }
   }, [id, isEditing]);
 
@@ -69,14 +69,11 @@ const RiskFormPage = ({ risks = [], onSubmit }) => {
     setLoading(true);
 
     try {
-      await new Promise((res) => setTimeout(res, 1000));
-
       if (isEditing) {
-        onSubmit(id, formData);
+        await updateRisk(id, formData);
       } else {
-        onSubmit(formData);
+        await createRisk(formData);
       }
-
       navigate("/risks");
     } catch (err) {
       setSubmitError("Something went wrong. Please try again.");
