@@ -50,3 +50,39 @@ export const mockRisks = [
     createdDate: "2026-04-12",
   },
 ];
+export const mockStats = {
+  totalRisks: 5,
+  openRisks: 2,
+  inProgressRisks: 2,
+  resolvedRisks: 1,
+  highPriority: 2,
+  mediumPriority: 2,
+  lowPriority: 1,
+  averageScore: 62,
+  byCategory: [
+    { category: "Security", count: 2 },
+    { category: "AI Risk", count: 1 },
+    { category: "Compliance", count: 1 },
+    { category: "Operational", count: 1 },
+    { category: "Financial", count: 0 },
+    { category: "Reputational", count: 0 },
+  ],
+  byStatus: [
+    { status: "Open", count: 2 },
+    { status: "In Progress", count: 2 },
+    { status: "Resolved", count: 1 },
+  ],
+  byPriority: [
+    { priority: "High", count: 2 },
+    { priority: "Medium", count: 2 },
+    { priority: "Low", count: 1 },
+  ],
+  recentTrend: [
+    { month: "Nov", count: 1 },
+    { month: "Dec", count: 2 },
+    { month: "Jan", count: 3 },
+    { month: "Feb", count: 2 },
+    { month: "Mar", count: 4 },
+    { month: "Apr", count: 5 },
+  ],
+};

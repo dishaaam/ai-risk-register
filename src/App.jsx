@@ -5,6 +5,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import RiskListPage from "./pages/RiskListPage";
 import RiskFormPage from "./pages/RiskFormPage";
+import DashboardPage from "./pages/DashboardPage";
 
 function App() {
   return (
@@ -13,11 +14,24 @@ function App() {
         <div className="min-h-screen bg-gray-50">
           <Navbar />
           <Routes>
+
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<Navigate to="/risks" replace />} />
 
-            {/* Protected routes */}
+            {/* Default redirect */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+            {/* Dashboard */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Risk List */}
             <Route
               path="/risks"
               element={
@@ -26,15 +40,18 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* Risk Detail — coming Day 7 */}
             <Route
               path="/risks/:id"
               element={
                 <ProtectedRoute>
-                  {/* Detail page — coming Day 7 */}
-                  <div className="p-6 text-gray-500">Detail page coming soon...</div>
+                  <div className="p-6 text-gray-500">Detail page coming Day 7...</div>
                 </ProtectedRoute>
               }
             />
+
+            {/* Create Risk — ADMIN and MANAGER only */}
             <Route
               path="/create"
               element={
@@ -43,11 +60,23 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* Edit Risk — ADMIN and MANAGER only */}
             <Route
               path="/risks/:id/edit"
               element={
                 <ProtectedRoute allowedRoles={["ADMIN", "MANAGER"]}>
                   <RiskFormPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Analytics — coming Day 10 */}
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <div className="p-6 text-gray-500">Analytics page coming Day 10...</div>
                 </ProtectedRoute>
               }
             />
@@ -59,9 +88,11 @@ function App() {
                 <div className="min-h-screen flex items-center justify-center">
                   <div className="text-center">
                     <p className="text-6xl mb-4">404</p>
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Page Not Found</h2>
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">
+                      Page Not Found
+                    </h2>
                     <button
-                      onClick={() => window.location.href = "/risks"}
+                      onClick={() => window.location.href = "/dashboard"}
                       className="text-blue-600 hover:underline text-sm"
                     >
                       Go back home
@@ -70,6 +101,7 @@ function App() {
                 </div>
               }
             />
+
           </Routes>
         </div>
       </BrowserRouter>

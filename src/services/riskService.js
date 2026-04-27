@@ -1,27 +1,28 @@
 import api from "./api";
-import { mockRisks } from "./mockData";
+import { mockRisks, mockStats } from "./mockData";
 
 const USE_MOCK = true; // Change to false when backend is ready
 
-// Local copy we can mutate during mock mode
-let localRisks = [...mockRisks];
-
 // GET all risks with pagination and sorting
-export const getRisks = async (page = 0, size = 10, sortBy = "createdDate", sortDir = "desc") => {
+export const getRisks = async (page = 0, size = 10, sortBy = "createdDate", sortDir = "desc", search = "") => {
   if (USE_MOCK) {
-    await new Promise((res) => setTimeout(res, 800));
+    await new Promise((res) => setTimeout(res, 1000));
 
-    let filtered = [...localRisks];
+    let filtered = [...mockRisks];
 
-    // Sorting
+    if (search) {
+      filtered = filtered.filter((r) =>
+        r.title.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Simulate sorting
     filtered.sort((a, b) => {
-      let aVal = a[sortBy];
-      let bVal = b[sortBy];
-      if (sortDir === "asc") return aVal > bVal ? 1 : -1;
-      return aVal < bVal ? 1 : -1;
+      if (sortDir === "asc") return a[sortBy] > b[sortBy] ? 1 : -1;
+      return a[sortBy] < b[sortBy] ? 1 : -1;
     });
 
-    // Pagination
+    // Simulate pagination
     const start = page * size;
     const content = filtered.slice(start, start + size);
 
@@ -34,7 +35,9 @@ export const getRisks = async (page = 0, size = 10, sortBy = "createdDate", sort
     };
   }
 
+  // Real API call
   const params = new URLSearchParams({ page, size, sortBy, sortDir });
+  if (search) params.append("search", search);
   const response = await api.get(`/api/risks?${params}`);
   return response.data;
 };
@@ -42,8 +45,8 @@ export const getRisks = async (page = 0, size = 10, sortBy = "createdDate", sort
 // GET single risk by ID
 export const getRiskById = async (id) => {
   if (USE_MOCK) {
-    await new Promise((res) => setTimeout(res, 400));
-    return localRisks.find((r) => r.id === parseInt(id)) || null;
+    await new Promise((res) => setTimeout(res, 500));
+    return mockRisks.find((r) => r.id === parseInt(id)) || null;
   }
   const response = await api.get(`/api/risks/${id}`);
   return response.data;
@@ -53,20 +56,7 @@ export const getRiskById = async (id) => {
 export const createRisk = async (data) => {
   if (USE_MOCK) {
     await new Promise((res) => setTimeout(res, 800));
-
-    // Generate new ID
-    const newId = Math.max(...localRisks.map((r) => r.id)) + 1;
-
-    const newRisk = {
-      ...data,
-      id: newId,
-      createdDate: new Date().toISOString().split("T")[0], // today's date
-    };
-
-    // ADD to local array so list shows it
-    localRisks.push(newRisk);
-
-    return newRisk;
+    return { ...data, id: Date.now() };
   }
   const response = await api.post("/api/risks", data);
   return response.data;
@@ -76,14 +66,7 @@ export const createRisk = async (data) => {
 export const updateRisk = async (id, data) => {
   if (USE_MOCK) {
     await new Promise((res) => setTimeout(res, 800));
-
-    // Find and UPDATE in local array
-    const index = localRisks.findIndex((r) => r.id === parseInt(id));
-    if (index !== -1) {
-      localRisks[index] = { ...localRisks[index], ...data };
-    }
-
-    return localRisks[index];
+    return { ...data, id };
   }
   const response = await api.put(`/api/risks/${id}`, data);
   return response.data;
@@ -93,12 +76,18 @@ export const updateRisk = async (id, data) => {
 export const deleteRisk = async (id) => {
   if (USE_MOCK) {
     await new Promise((res) => setTimeout(res, 500));
-
-    // REMOVE from local array
-    localRisks = localRisks.filter((r) => r.id !== parseInt(id));
-
     return true;
   }
   await api.delete(`/api/risks/${id}`);
   return true;
+};
+
+// GET dashboard stats
+export const getStats = async () => {
+  if (USE_MOCK) {
+    await new Promise((res) => setTimeout(res, 800));
+    return mockStats;
+  }
+  const response = await api.get("/api/risks/stats");
+  return response.data;
 };
