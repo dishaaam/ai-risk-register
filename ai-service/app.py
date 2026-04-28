@@ -42,5 +42,6 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    # I always use debug=False when running in Docker so it doesn't crash from the reloader!
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    # threaded=True allows Flask to handle multiple concurrent requests from the Java backend
+    # In Docker/production, gunicorn handles this instead (see Dockerfile CMD)
+    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)

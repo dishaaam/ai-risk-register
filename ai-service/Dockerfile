@@ -13,5 +13,6 @@ COPY . .
 # Expose port 5000 which is what my Flask app runs on
 EXPOSE 5000
 
-# I shouldn't run this with debug=True in Docker, so I'll just use Flask run or python app.py
-CMD ["python", "app.py"]
+# Using gunicorn as the production WSGI server to handle concurrent requests from the Java backend.
+# 4 workers means 4 requests can be processed simultaneously without blocking each other.
+CMD ["gunicorn", "--workers=4", "--bind=0.0.0.0:5000", "--timeout=120", "app:create_app()"]
