@@ -6,6 +6,7 @@ import LoginPage from "./pages/LoginPage";
 import RiskListPage from "./pages/RiskListPage";
 import RiskFormPage from "./pages/RiskFormPage";
 import DashboardPage from "./pages/DashboardPage";
+import RiskDetailPage from "./pages/RiskDetailPage";
 
 function App() {
   return (
@@ -43,13 +44,13 @@ function App() {
 
             {/* Risk Detail — coming Day 7 */}
             <Route
-              path="/risks/:id"
-              element={
-                <ProtectedRoute>
-                  <div className="p-6 text-gray-500">Detail page coming Day 7...</div>
-                </ProtectedRoute>
-              }
-            />
+  path="/risks/:id"
+  element={
+    <ProtectedRoute>
+      <RiskDetailPage />
+    </ProtectedRoute>
+  }
+/>
 
             {/* Create Risk — ADMIN and MANAGER only */}
             <Route

@@ -8,6 +8,7 @@ export const mockRisks = [
     score: 85,
     owner: "Alice Johnson",
     createdDate: "2026-04-01",
+    description: "User data is being transmitted without encryption, exposing it to man-in-the-middle attacks.",
   },
   {
     id: 2,
@@ -18,6 +19,7 @@ export const mockRisks = [
     score: 62,
     owner: "Bob Smith",
     createdDate: "2026-04-05",
+    description: "The AI model occasionally generates inaccurate information in automated reports.",
   },
   {
     id: 3,
@@ -28,6 +30,7 @@ export const mockRisks = [
     score: 78,
     owner: "Carol White",
     createdDate: "2026-04-08",
+    description: "Admin actions are not being logged, making it impossible to trace unauthorized changes.",
   },
   {
     id: 4,
@@ -38,6 +41,7 @@ export const mockRisks = [
     score: 30,
     owner: "David Lee",
     createdDate: "2026-04-10",
+    description: "The third-party payment API has no service level agreement, risking unplanned downtime.",
   },
   {
     id: 5,
@@ -48,8 +52,10 @@ export const mockRisks = [
     score: 55,
     owner: "Eva Green",
     createdDate: "2026-04-12",
+    description: "Form inputs are not being validated server-side, opening the application to injection attacks.",
   },
 ];
+
 export const mockStats = {
   totalRisks: 5,
   openRisks: 2,
@@ -85,4 +91,37 @@ export const mockStats = {
     { month: "Mar", count: 4 },
     { month: "Apr", count: 5 },
   ],
+};
+
+export const mockAiAnalysis = {
+  description:
+    "This risk represents a significant threat to the organization's data security posture. The identified vulnerability could allow unauthorized access to sensitive user information if exploited by a malicious actor. Immediate remediation is strongly advised.",
+  recommendations: [
+    {
+      action_type: "Immediate",
+      description: "Encrypt all data in transit using TLS 1.3 or higher.",
+      priority: "High",
+    },
+    {
+      action_type: "Short-term",
+      description: "Conduct a full security audit of all API endpoints.",
+      priority: "Medium",
+    },
+    {
+      action_type: "Long-term",
+      description: "Implement automated vulnerability scanning in the CI/CD pipeline.",
+      priority: "Low",
+    },
+  ],
+  category: "Security",
+  confidence: 0.91,
+  model_used: "llama-3.3-70b",
+  generated_at: "2026-04-28T10:30:00Z",
+};
+
+export const mockAiAnswer = {
+  answer:
+    "Based on the risk data, this risk requires immediate attention due to its high score and open status. The recommended approach is to assign a dedicated owner and begin remediation within 48 hours. Ensure all stakeholders are informed and a mitigation plan is documented.",
+  confidence: 0.87,
+  model_used: "llama-3.3-70b",
 };
