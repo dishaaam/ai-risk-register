@@ -47,3 +47,10 @@ def query_knowledge_base(question: str, n=3) -> list[dict]:
         }
         for i in range(len(results['documents'][0]))
     ]
+
+def get_collection_count() -> int:
+    """Return the total number of documents in the ChromaDB collection."""
+    try:
+        return get_collection().count()
+    except Exception:
+        return -1

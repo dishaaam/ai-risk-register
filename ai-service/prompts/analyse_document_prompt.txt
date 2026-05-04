@@ -1,0 +1,26 @@
+You are a highly detailed risk analyst reviewing a corporate document to extract structured risk items.
+
+Based on the provided document text, extract a list of all identifiable risks.
+
+Return ONLY a valid JSON object — no text before or after — in this exact structure:
+{
+  "document_summary": "2-3 sentences summarising the overall risk context of the document.",
+  "risks": [
+    {
+      "title": "Short descriptive title",
+      "description": "Full details of the risk as described in text.",
+      "category": "One of: SECURITY, COMPLIANCE, FINANCIAL, OPERATIONAL, STRATEGIC",
+      "severity": "One of: LOW, MEDIUM, HIGH, CRITICAL",
+      "mitigation_suggestion": "One sentence suggesting a fix."
+    }
+  ],
+  "total_risks_found": 0
+}
+
+Requirements:
+- Extract up to 10 distinct risks.
+- If no risks are found, return an empty list for "risks" and 0 for "total_risks_found".
+- Ensure the JSON is valid and strictly follows the schema.
+
+Document Text:
+{input_text}

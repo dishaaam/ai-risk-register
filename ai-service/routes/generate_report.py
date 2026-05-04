@@ -1,40 +1,123 @@
-from flask import Blueprint, request, jsonify
-from services.groq_client import call_groq
-from datetime import datetime, timezone
-import logging
+# I am the /generate-report endpoint. I produce a structured executive risk report from risk register data.
 import json
+import logging
+import time
+from flask import Blueprint, request, jsonify, Response, stream_with_context
+from datetime import datetime, timezone
+from services.groq_client import call_groq, stream_groq
+from services.ai_cache import get_cached, set_cached
+from services.response_builder import build_meta, estimate_tokens
 
-generate_report_bp = Blueprint('generate_report', __name__)
 logger = logging.getLogger(__name__)
+generate_report_bp = Blueprint('generate_report', __name__)
 
-FALLBACK = {
-    'title': 'Risk Report Unavailable',
-    'executive_summary': 'AI analysis temporarily unavailable. Manual review required.',
-    'overview': 'Could not process the provided risk items at this time.',
-    'top_items': ['Unavailable'],
-    'recommendations': ['Please review the risk items manually.', 'Try generating the report again later.'],
-    'is_fallback': True
+# I've defined this fallback report in case my Groq service is unavailable.
+FALLBACK_REPORT = {
+    "title": "AI Risk Register Report — Service Unavailable",
+    "executive_summary": "The AI report generation service is temporarily unavailable.",
+    "overview": "Report generation could not be completed. Manual review of risk items is recommended.",
+    "top_items": [
+        {"rank": 1, "name": "N/A", "category": "N/A", "severity": "N/A", "rationale": "AI service unavailable."}
+    ],
+    "recommendations": [
+        {"priority": "IMMEDIATE", "action": "Retry report generation later.", "owner": "Risk Manager"}
+    ]
 }
+
+
+def _load_prompt_template() -> str:
+    # I'm loading my report prompt from the prompts directory.
+    try:
+        with open('prompts/generate_report_prompt.txt', 'r') as f:
+            return f.read()
+    except FileNotFoundError:
+        logger.error("I couldn't find prompts/generate_report_prompt.txt.")
+        return ""
+
 
 @generate_report_bp.route('/generate-report', methods=['POST'])
 def generate_report():
-    logger.info("Received request at /generate-report")
-    data = request.get_json(silent=True) # silent=True prevents 400 crash
-    if not data:
-        return jsonify({'error':'Request body must be valid JSON'}), 400
-        
-    items = data.get('items', [])
-    if not items or not isinstance(items, list):
-        return jsonify({'error': 'Field items is required and must be a non-empty list'}), 400
-        
-    # Formatting the input list into a readable string for the LLM
-    text_input = "\n".join([f"- {str(item)}" for item in items])
-        
-    result = call_groq('generate_report', text_input)
+    # I'm handling the full JSON report generation here.
+    data = request.get_json(silent=True)
+    if not data or not data.get("text", "").strip():
+        return jsonify({"error": "I need a 'text' field to generate a report."}), 400
+
+    input_text = data["text"].strip()
+
+    # I'm checking my cache first to see if I've already generated this report.
+    cached_response = get_cached("generate_report", input_text)
+    if cached_response is not None:
+        logger.info("I've served the POST /generate-report from my Redis cache.")
+        return jsonify(cached_response), 200
+
+    template = _load_prompt_template()
+    if not template:
+        return jsonify({**FALLBACK_REPORT, "is_fallback": True}), 200
+
+    prompt = template.replace("{input_text}", input_text)
+    messages = [{"role": "user", "content": prompt}]
+
+    # I hit a cache miss, so I'm calling Groq now.
+    start_time = time.time()
+    raw_response = call_groq(messages, temperature=0.4, max_tokens=1000)
+    response_time_ms = (time.time() - start_time) * 1000
     ts = datetime.now(timezone.utc).isoformat()
-    
-    if result is None:
-        logger.warning('Groq call failed, returning fallback response.')
-        return jsonify({**FALLBACK, 'generated_at': ts}), 200
+
+    if raw_response is None:
+        return jsonify({**FALLBACK_REPORT, "generated_at": ts, "is_fallback": True}), 200
+
+    try:
+        # I'm cleaning up the response from Groq to ensure it's valid JSON.
+        clean = raw_response.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        parsed = json.loads(clean)
         
-    return jsonify({**result, 'generated_at': ts}), 200
+        response_body = {
+            **parsed,
+            "generated_at": ts,
+            "is_fallback": False,
+            "meta": build_meta(
+                response_time_ms=response_time_ms,
+                cached=False,
+                confidence=0.9,
+                tokens_used=estimate_tokens(raw_response)
+            )
+        }
+
+        # I'm storing the successful report in my cache for future use.
+        set_cached("generate_report", input_text, response_body)
+        return jsonify(response_body), 200
+
+    except Exception as e:
+        logger.error(f"I failed to parse the Groq report JSON: {e}")
+        return jsonify({**FALLBACK_REPORT, "generated_at": ts, "is_fallback": True}), 200
+
+
+@generate_report_bp.route('/generate-report/stream', methods=['POST'])
+def generate_report_stream():
+    """
+    I've added this SSE streaming version of /generate-report.
+    I return raw text chunks as they are generated by my model.
+    Note: I've decided NOT to cache streaming responses to keep things simple.
+    """
+    data = request.get_json(silent=True)
+    if not data or not data.get("text", "").strip():
+        return jsonify({"error": "I need a 'text' field to start streaming."}), 400
+
+    input_text = data["text"].strip()
+    template = _load_prompt_template()
+    if not template:
+        return jsonify({"error": "My prompt template is missing."}), 500
+
+    prompt = template.replace("{input_text}", input_text)
+    messages = [{"role": "user", "content": prompt}]
+
+    @stream_with_context
+    def generate():
+        logger.info("I'm starting an SSE stream for /generate-report/stream.")
+        yield "data: [START]\n\n"
+        for chunk in stream_groq(messages):
+            yield f"data: {chunk}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return Response(generate(), mimetype='text/event-stream')
+
