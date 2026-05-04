@@ -7,6 +7,8 @@ import RiskListPage from "./pages/RiskListPage";
 import RiskFormPage from "./pages/RiskFormPage";
 import DashboardPage from "./pages/DashboardPage";
 import RiskDetailPage from "./pages/RiskDetailPage";
+import AiPanel from "./components/AiPanel";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
 function App() {
   return (
@@ -42,15 +44,15 @@ function App() {
               }
             />
 
-            {/* Risk Detail — coming Day 7 */}
+            {/* Risk Detail */}
             <Route
-  path="/risks/:id"
-  element={
-    <ProtectedRoute>
-      <RiskDetailPage />
-    </ProtectedRoute>
-  }
-/>
+              path="/risks/:id"
+              element={
+                <ProtectedRoute>
+                  <RiskDetailPage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Create Risk — ADMIN and MANAGER only */}
             <Route
@@ -74,13 +76,13 @@ function App() {
 
             {/* Analytics — coming Day 10 */}
             <Route
-              path="/analytics"
-              element={
-                <ProtectedRoute>
-                  <div className="p-6 text-gray-500">Analytics page coming Day 10...</div>
-                </ProtectedRoute>
-              }
-            />
+  path="/analytics"
+  element={
+    <ProtectedRoute>
+      <AnalyticsPage />
+    </ProtectedRoute>
+  }
+/>
 
             {/* 404 fallback */}
             <Route
@@ -104,6 +106,10 @@ function App() {
             />
 
           </Routes>
+
+          {/* Floating AI Panel — visible on every page */}
+          <AiPanel />
+
         </div>
       </BrowserRouter>
     </AuthProvider>

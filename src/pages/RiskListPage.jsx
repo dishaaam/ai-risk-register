@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getRisks, deleteRisk } from "../services/riskService";
 import TableSkeleton from "../components/TableSkeleton";
 import StatusBadge from "../components/StatusBadge";
@@ -7,6 +7,8 @@ import PriorityBadge from "../components/PriorityBadge";
 import Pagination from "../components/Pagination";
 import SortIcon from "../components/SortIcon";
 import ConfirmModal from "../components/ConfirmModal";
+import SearchFilterBar from "../components/SearchFilterBar";
+import ExportButton from "../components/ExportButton";
 
 const COLUMNS = [
   { label: "Title", key: "title" },
@@ -20,6 +22,7 @@ const COLUMNS = [
 
 const RiskListPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Data state
   const [risks, setRisks] = useState([]);
@@ -27,24 +30,70 @@ const RiskListPage = () => {
   const [error, setError] = useState("");
 
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(
+    parseInt(searchParams.get("page") || "0")
+  );
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const PAGE_SIZE = 10;
 
   // Sorting state
-  const [sortBy, setSortBy] = useState("createdDate");
-  const [sortDir, setSortDir] = useState("desc");
+  const [sortBy, setSortBy] = useState(
+    searchParams.get("sortBy") || "createdDate"
+  );
+  const [sortDir, setSortDir] = useState(
+    searchParams.get("sortDir") || "desc"
+  );
+
+  // Filter state — read from URL params on load
+  const [filters, setFilters] = useState({
+    search: searchParams.get("search") || "",
+    status: searchParams.get("status") || "All",
+    priority: searchParams.get("priority") || "All",
+    category: searchParams.get("category") || "All",
+    startDate: searchParams.get("startDate")
+      ? new Date(searchParams.get("startDate"))
+      : null,
+    endDate: searchParams.get("endDate")
+      ? new Date(searchParams.get("endDate"))
+      : null,
+  });
 
   // Delete modal state
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  // Sync filters + pagination + sort to URL
+  useEffect(() => {
+    const params = {};
+    if (filters.search) params.search = filters.search;
+    if (filters.status !== "All") params.status = filters.status;
+    if (filters.priority !== "All") params.priority = filters.priority;
+    if (filters.category !== "All") params.category = filters.category;
+    if (filters.startDate) params.startDate = filters.startDate.toISOString().split("T")[0];
+    if (filters.endDate) params.endDate = filters.endDate.toISOString().split("T")[0];
+    if (currentPage > 0) params.page = currentPage;
+    if (sortBy !== "createdDate") params.sortBy = sortBy;
+    if (sortDir !== "desc") params.sortDir = sortDir;
+    setSearchParams(params);
+  }, [filters, currentPage, sortBy, sortDir]);
 
   // Fetch data
   const fetchRisks = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const data = await getRisks(currentPage, PAGE_SIZE, sortBy, sortDir);
+      const data = await getRisks(
+        currentPage,
+        PAGE_SIZE,
+        sortBy,
+        sortDir,
+        filters.search,
+        filters.status,
+        filters.priority,
+        filters.category,
+        filters.startDate,
+        filters.endDate
+      );
       setRisks(data.content);
       setTotalPages(data.totalPages);
       setTotalElements(data.totalElements);
@@ -53,13 +102,19 @@ const RiskListPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, sortBy, sortDir]);
+  }, [currentPage, sortBy, sortDir, filters]);
 
   useEffect(() => {
     fetchRisks();
   }, [fetchRisks]);
 
-  // Handle column sort click
+  // Handle filter change from SearchFilterBar
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+    setCurrentPage(0); // Reset to page 1 on filter change
+  };
+
+  // Handle column sort
   const handleSort = (column) => {
     if (sortBy === column) {
       setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -70,7 +125,7 @@ const RiskListPage = () => {
     setCurrentPage(0);
   };
 
-  // Handle delete confirm
+  // Handle delete
   const handleDeleteConfirm = async () => {
     try {
       await deleteRisk(deleteTarget.id);
@@ -83,22 +138,32 @@ const RiskListPage = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-7xl mx-auto">
+
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">AI Risk Register</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            {totalElements} total risks tracked
-          </p>
-        </div>
-        <button
-          onClick={() => navigate("/create")}
-          className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition"
-        >
-          + Add Risk
-        </button>
-      </div>
+<div className="flex justify-between items-center mb-6">
+  <div>
+    <h1 className="text-2xl font-bold text-gray-800">Risk Register</h1>
+    <p className="text-gray-500 text-sm mt-1">
+      {totalElements} total risks tracked
+    </p>
+  </div>
+  <div className="flex items-center gap-3">
+    <ExportButton risks={risks} />
+    <button
+      onClick={() => navigate("/create")}
+      className="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition text-sm"
+    >
+      + Add Risk
+    </button>
+  </div>
+</div>
+
+      {/* Search and Filter Bar */}
+      <SearchFilterBar
+        onFilterChange={handleFilterChange}
+        initialFilters={filters}
+      />
 
       {/* Error Banner */}
       {error && (
@@ -122,7 +187,11 @@ const RiskListPage = () => {
                   className="px-4 py-3 cursor-pointer hover:bg-blue-800 select-none transition"
                 >
                   {col.label}
-                  <SortIcon column={col.key} sortBy={sortBy} sortDir={sortDir} />
+                  <SortIcon
+                    column={col.key}
+                    sortBy={sortBy}
+                    sortDir={sortDir}
+                  />
                 </th>
               ))}
               <th className="px-4 py-3">Actions</th>
@@ -139,10 +208,12 @@ const RiskListPage = () => {
               <tr>
                 <td colSpan={8} className="text-center py-16 text-gray-400">
                   <div className="flex flex-col items-center gap-2">
-                    <span className="text-5xl">📋</span>
-                    <p className="text-lg font-medium">No risks found</p>
+                    <span className="text-5xl">🔍</span>
+                    <p className="text-lg font-medium text-gray-600">
+                      No risks found
+                    </p>
                     <p className="text-sm">
-                      Click "+ Add Risk" to create your first entry
+                      Try adjusting your search or filters
                     </p>
                   </div>
                 </td>
@@ -178,7 +249,9 @@ const RiskListPage = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{risk.owner}</td>
-                  <td className="px-4 py-3 text-gray-500">{risk.createdDate}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {risk.createdDate}
+                  </td>
                   <td className="px-4 py-3">
                     <button
                       onClick={(e) => {
@@ -217,7 +290,7 @@ const RiskListPage = () => {
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal */}
       {deleteTarget && (
         <ConfirmModal
           message={`Are you sure you want to delete "${deleteTarget.title}"? This action cannot be undone.`}

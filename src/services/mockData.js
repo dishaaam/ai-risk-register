@@ -125,3 +125,35 @@ export const mockAiAnswer = {
   confidence: 0.87,
   model_used: "llama-3.3-70b",
 };
+
+export const mockAnalyticsData = {
+  scoreDistribution: [
+    { range: "0-20", count: 0 },
+    { range: "21-40", count: 1 },
+    { range: "41-60", count: 2 },
+    { range: "61-80", count: 1 },
+    { range: "81-100", count: 1 },
+  ],
+  monthlyTrend: [
+    { month: "Nov 25", open: 1, inProgress: 0, resolved: 0 },
+    { month: "Dec 25", open: 2, inProgress: 1, resolved: 0 },
+    { month: "Jan 26", open: 2, inProgress: 1, resolved: 1 },
+    { month: "Feb 26", open: 3, inProgress: 2, resolved: 1 },
+    { month: "Mar 26", open: 3, inProgress: 2, resolved: 1 },
+    { month: "Apr 26", open: 2, inProgress: 2, resolved: 1 },
+  ],
+  topOwners: [
+    { owner: "Alice Johnson", count: 1, avgScore: 85 },
+    { owner: "Bob Smith", count: 1, avgScore: 62 },
+    { owner: "Carol White", count: 1, avgScore: 78 },
+    { owner: "David Lee", count: 1, avgScore: 30 },
+    { owner: "Eva Green", count: 1, avgScore: 55 },
+  ],
+  resolutionTime: [
+    { category: "Security", avgDays: 12 },
+    { category: "AI Risk", avgDays: 8 },
+    { category: "Compliance", avgDays: 20 },
+    { category: "Operational", avgDays: 5 },
+    { category: "Financial", avgDays: 15 },
+  ],
+};

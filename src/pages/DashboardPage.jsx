@@ -16,38 +16,58 @@ import {
   Line,
 } from "recharts";
 import { getStats } from "../services/riskService";
+import { generateReport } from "../services/aiService";
 import KpiCard from "../components/KpiCard";
 import CardSkeleton from "../components/CardSkeleton";
 import ChartSkeleton from "../components/ChartSkeleton";
+import AiReportModal from "../components/AiReportModal";
 
 const PIE_COLORS = ["#EF4444", "#EAB308", "#22C55E"];
 const BAR_COLOR = "#1B4F8A";
 const LINE_COLOR = "#1B4F8A";
 
+// Custom tooltip for charts
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg shadow px-3 py-2 text-sm">
+        <p className="font-semibold text-gray-700">{label}</p>
+        <p className="text-blue-900 font-bold">{payload[0].value} risks</p>
+      </div>
+    );
+  }
+  return null;
+};
+
 const DashboardPage = () => {
   const navigate = useNavigate();
+
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showReport, setShowReport] = useState(false);
+
+  const fetchStats = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await getStats();
+      setStats(data);
+    } catch (err) {
+      setError("Failed to load dashboard data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const data = await getStats();
-        setStats(data);
-      } catch (err) {
-        setError("Failed to load dashboard data.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchStats();
   }, []);
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-7xl mx-auto">
 
-      {/* Header */}
+      {/* Page Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
@@ -63,14 +83,20 @@ const DashboardPage = () => {
         </button>
       </div>
 
-      {/* Error */}
+      {/* Error Banner */}
       {error && (
-        <div className="bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm mb-6">
-          {error}
+        <div className="bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm mb-6 flex justify-between items-center">
+          <span>{error}</span>
+          <button
+            onClick={fetchStats}
+            className="underline font-medium ml-4"
+          >
+            Retry
+          </button>
         </div>
       )}
 
-      {/* KPI Cards Row 1 */}
+      {/* Primary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {loading ? (
           [...Array(4)].map((_, i) => <CardSkeleton key={i} />)
@@ -108,7 +134,7 @@ const DashboardPage = () => {
         )}
       </div>
 
-      {/* KPI Cards Row 2 */}
+      {/* Secondary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {loading ? (
           [...Array(3)].map((_, i) => <CardSkeleton key={i} />)
@@ -139,42 +165,52 @@ const DashboardPage = () => {
         )}
       </div>
 
-      {/* Charts Row 1 */}
+      {/* Charts Row 1 — Category and Status */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
-        {/* Bar Chart — Risks by Category */}
+        {/* Bar Chart — By Category */}
         {loading ? (
           <ChartSkeleton />
         ) : (
           <div className="bg-white rounded-xl shadow p-5">
-            <h2 className="text-base font-bold text-gray-800 mb-4">
+            <h2 className="text-base font-bold text-gray-800 mb-1">
               Risks by Category
             </h2>
+            <p className="text-xs text-gray-400 mb-4">
+              How risks are distributed across categories
+            </p>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart
                 data={stats.byCategory}
                 margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="category" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
+                <XAxis
+                  dataKey="category"
+                  tick={{ fontSize: 10 }}
+                  interval={0}
+                  angle={-15}
+                  textAnchor="end"
                 />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="count" fill={BAR_COLOR} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         )}
 
-        {/* Pie Chart — Risks by Status */}
+        {/* Pie Chart — By Status */}
         {loading ? (
           <ChartSkeleton />
         ) : (
           <div className="bg-white rounded-xl shadow p-5">
-            <h2 className="text-base font-bold text-gray-800 mb-4">
+            <h2 className="text-base font-bold text-gray-800 mb-1">
               Risks by Status
             </h2>
+            <p className="text-xs text-gray-400 mb-4">
+              Current status breakdown of all risks
+            </p>
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
@@ -210,17 +246,20 @@ const DashboardPage = () => {
         )}
       </div>
 
-      {/* Charts Row 2 */}
+      {/* Charts Row 2 — Priority and Trend */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
-        {/* Bar Chart — Risks by Priority */}
+        {/* Bar Chart — By Priority */}
         {loading ? (
           <ChartSkeleton />
         ) : (
           <div className="bg-white rounded-xl shadow p-5">
-            <h2 className="text-base font-bold text-gray-800 mb-4">
+            <h2 className="text-base font-bold text-gray-800 mb-1">
               Risks by Priority
             </h2>
+            <p className="text-xs text-gray-400 mb-4">
+              Distribution across High, Medium and Low priority
+            </p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart
                 data={stats.byPriority}
@@ -229,9 +268,7 @@ const DashboardPage = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="priority" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                />
+                <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {stats.byPriority.map((entry, index) => (
                     <Cell
@@ -245,14 +282,17 @@ const DashboardPage = () => {
           </div>
         )}
 
-        {/* Line Chart — Risk Trend */}
+        {/* Line Chart — Trend */}
         {loading ? (
           <ChartSkeleton />
         ) : (
           <div className="bg-white rounded-xl shadow p-5">
-            <h2 className="text-base font-bold text-gray-800 mb-4">
-              Risk Trend (Last 6 Months)
+            <h2 className="text-base font-bold text-gray-800 mb-1">
+              Risk Trend
             </h2>
+            <p className="text-xs text-gray-400 mb-4">
+              Total risks logged over the last 6 months
+            </p>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart
                 data={stats.recentTrend}
@@ -268,7 +308,7 @@ const DashboardPage = () => {
                   type="monotone"
                   dataKey="count"
                   stroke={LINE_COLOR}
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   dot={{ r: 4, fill: LINE_COLOR }}
                   activeDot={{ r: 6 }}
                 />
@@ -279,7 +319,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Quick Actions */}
-      {!loading && stats && (
+      {!loading && (
         <div className="bg-white rounded-xl shadow p-5">
           <h2 className="text-base font-bold text-gray-800 mb-4">
             Quick Actions
@@ -303,8 +343,19 @@ const DashboardPage = () => {
             >
               📊 Full Analytics
             </button>
+            <button
+              onClick={() => setShowReport(true)}
+              className="border border-purple-400 text-purple-700 px-4 py-2 rounded-lg hover:bg-purple-50 transition text-sm flex items-center gap-1"
+            >
+              🤖 Generate AI Report
+            </button>
           </div>
         </div>
+      )}
+
+      {/* AI Report Modal */}
+      {showReport && (
+        <AiReportModal onClose={() => setShowReport(false)} />
       )}
 
     </div>
