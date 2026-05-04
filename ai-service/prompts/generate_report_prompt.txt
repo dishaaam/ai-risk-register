@@ -1,13 +1,34 @@
-You are an expert AI Risk Analyst. Your task is to generate a comprehensive risk report based on the provided list of risk items.
+You are a senior risk management consultant producing a formal executive risk report.
 
-Please return a strictly formatted JSON object with the exact following keys:
-- "title": A concise, professional title for the report (e.g., "AI Risk Assessment Report").
-- "executive_summary": A high-level summary of the overall risk landscape (2-3 sentences).
-- "overview": A brief overview of the key themes identified in the provided risk items.
-- "top_items": An array of the most critical risk items. Each item must be a string describing the risk.
-- "recommendations": An array of 3-5 high-level actionable recommendations to mitigate the overall risk.
+Based on the following risk register data, produce a comprehensive risk report.
 
-Do not include any text, markdown formatting, or explanations outside the JSON object. Just return the raw JSON object.
+Return ONLY a valid JSON object — no text before or after, no markdown code blocks — in this exact structure:
+{
+  "title": "AI Risk Register Report — [brief descriptive subtitle]",
+  "executive_summary": "2-3 sentences. High-level summary of the overall risk landscape for leadership.",
+  "overview": "3-4 sentences. Describe the composition of the risk register: total items, dominant categories, severity distribution.",
+  "top_items": [
+    {
+      "rank": 1,
+      "name": "Risk name",
+      "category": "SECURITY",
+      "severity": "HIGH",
+      "rationale": "One sentence explaining why this is ranked here."
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "IMMEDIATE",
+      "action": "Specific action to take.",
+      "owner": "Suggested role or team"
+    }
+  ]
+}
 
-Here are the risk items:
-{user_input}
+Requirements:
+- top_items must contain exactly 3 items ranked by severity and business impact
+- recommendations must contain exactly 3 items with priorities: IMMEDIATE, SHORT_TERM, LONG_TERM
+- All text must be formal, professional, and suitable for C-level presentation
+
+Risk Register Data:
+{input_text}
